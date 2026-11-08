@@ -1,3 +1,10 @@
+# loggingv2.py
+# logs the cpu temperature, cpu clock speed, throttle state,
+#   timing, and probe temperature readings
+
+# All code written by me (Callum), with bug fixing and 
+#   help provided by Claude
+
 # imports
 import subprocess
 import time
@@ -6,6 +13,14 @@ import os
 import socket
 import sys
 import signal
+
+# if SIGTERM signal -> ensures that except/finally runs even if kill/pkill are used, 
+# so it takes the signal and instead prersents it as a keyboardinterrupt instead
+def handleStop(signum, frame):
+    raise KeyboardInterrupt
+
+signal.signal(signal.SIGTERM, handleStop)
+signal.signal(signal.SIGHUP, handleStop)
 
 # constants
 insideProbeId = "28-000000dae6eb"
@@ -71,11 +86,6 @@ def readSensors():
 
     return temp1, clockHz, throttled
 
-# if SIGTERM signal -> ensures that except/finally runs even if kill/pkill are used, 
-# so it takes the signal and instead prersents it as a keyboardinterrupt instead
-def handleStop(signum, frame):
-    raise KeyboardInterrupt
-
 # function to get the readings from the DS18B20 probes
 def readProbe(probeID):
     # probes temperature file path
@@ -102,8 +112,6 @@ rowCount = 0
 probeErrors = 0
 sensorErrors = 0
 overruns = 0
-
-signal.signal(signal.SIGTERM, handleStop)
 
 # main loop
 try:
@@ -135,6 +143,7 @@ try:
 
         if waitTime < 0:
             overruns += 1
+            nextTime = time.monotonic()
 
         sensorErrors += [temp, clockHz, throttled].count("")
         probeErrors += [insideC, ambientC].count("")
